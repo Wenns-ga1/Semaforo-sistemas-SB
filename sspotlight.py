@@ -6,29 +6,29 @@ import datetime
 pygame.mixer.init()
 pygame.init()
 
-# Cascaron del semaforo
+# Cascarón del semáforo
 window_width = 200
 window_height = 400
 screen = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption("Smart Stoplight")
 
-# Colores 
+# Colores
 GREEN = (0, 255, 0)
 YELLOW = (255, 255, 0)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 
-# Simulacion de la funcion de trafico
+# Simulación de tráfico en base a horario
 def get_simulated_traffic():
-    """Simulacion de trafico en base a las horas mas frecuentes de transito."""
+    """Simulación de tráfico en base a las horas más frecuentes de tránsito."""
     hour = datetime.datetime.now().hour
 
     if 7 <= hour < 9 or 12 <= hour < 14 or 17 <= hour < 19:
-        return "heavy"  # Rush hour
+        return "heavy"  # Hora pico
     else:
-        return "normal"  # Off-peak
+        return "normal"  # Tráfico normal
 
-# SEMAFORO 
+# Dibuja el semáforo en pantalla
 def draw_stoplight(light_color):
     screen.fill(BLACK)
     pygame.draw.rect(screen, (100, 100, 100), [50, 50, 100, 300])
@@ -39,49 +39,54 @@ def draw_stoplight(light_color):
 
     pygame.display.update()
 
-#  Sonidos
+# Reproduce sonido correspondiente
 def play_sound(light_color):
     try:
         sound = pygame.mixer.Sound(f"{light_color}_test.wav")
         sound.play()
-        time.sleep(sound.get_length())  # Wait for the sound to finish before moving on
+        time.sleep(sound.get_length())  # Espera hasta que termine el sonido
     except:
         print(f"[Sound missing] {light_color}_test.wav")
 
-
-#  Entrenamiento del trafico en base a la simulacion
+# Ajusta duración según tráfico
 def adjust_for_traffic(light_color, traffic_condition):
     if traffic_condition == "heavy":
         return 5 if light_color == "green" else 2
     else:
         return 3 if light_color == "green" else 2 if light_color == "yellow" else 3
 
-# Loop principal de la simulacion
+# Simulación principal
 def stoplight_simulation():
     light_color = "green"
     cycle_count = 0
 
-    while cycle_count < 5:  # Run for 5 cycles
+    while cycle_count < 5:  # Corre 5 ciclos
         traffic_condition = get_simulated_traffic()
         print(f"Time: {datetime.datetime.now().strftime('%H:%M:%S')} | Traffic: {traffic_condition} | Light: {light_color}")
 
         draw_stoplight(light_color)
         play_sound(light_color)
 
-        wait_time = adjust_for_traffic(light_color, traffic_condition)
-        time.sleep(wait_time)
+        # Maneja eventos (botón peatonal)
+        wait_start = time.time()
+        wait_duration = adjust_for_traffic(light_color, traffic_condition)
+        while time.time() - wait_start < wait_duration:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        if light_color == "red":
+                            print("Pedestrian button pressed — playing warning sound!")
+                            try:
+                                warning = pygame.mixer.Sound("red_test.wav")
+                                warning.play()
+                                time.sleep(warning.get_length())
+                            except:
+                                print("[Warning sound missing] red_test.wav")
 
-        # Random chance of pedestrian detection ^ mejorar para funcionar en base al boton
-        if light_color == "red" and datetime.datetime.now().second % 2 == 0:
-            print("Pedestrian detected — playing warning sound!")
-            try:
-                warning = pygame.mixer.Sound("red_test.wav")
-                warning.play()
-                time.sleep(warning.get_length())
-            except:
-                print("[Warning sound missing] red_test.wav")
-
-        # Ciclo entre luces
+        # Ciclo de luces
         light_color = {
             "green": "yellow",
             "yellow": "red",
@@ -93,6 +98,7 @@ def stoplight_simulation():
     print("Simulation complete.")
     pygame.quit()
 
-# Run the simulation
+# Ejecutar
 if __name__ == "__main__":
     stoplight_simulation()
+
